@@ -24,11 +24,15 @@ import "react-quill/dist/quill.snow.css";
 import React, { FC, useEffect, useState } from "react";
 import { MembersPopover } from "../MembersPopover";
 import { DatePopover } from "../DatePopover";
-import { useDispatch } from "react-redux";
-import { AppDispatch, useAppSelecter } from "@/redux/store";
-
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState, useAppSelecter } from "@/redux/store";
+import { addDescription } from "@/redux/features/task-list-slice";
+import { addComment } from "@/redux/features/task-list-slice";
+import { Comment } from "../Comment";
 
 interface CardModal {
+  listId: string;
+  cardId: string;
   title: string;
   listName?: string;
   openModal: boolean;
@@ -36,23 +40,51 @@ interface CardModal {
 }
 
 const CardModal: FC<CardModal> = ({
+  listId,
+  cardId,
   title,
   listName,
   openModal,
   onCloseModal,
 }) => {
-  const [comment, setComment] = useState([
-    {
-      id: 0,
-      name: "",
-      comment: "",
-    },
-  ]);
+  // const [comment, setComment] = useState([
+  //   {
+  //     id: 0,
+  //     name: "",
+  //     comment: "",
+  //   },
+  // ]);
 
-  // const cardtitle = useAppSelecter((state) => state.rootReducer.taskcard);
+  const comments = useSelector((state: RootState) => {
+    // Find the list by listId
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    // If the list is found, find the card by cardId
+    if (list) {
+      const card = list.cards.find((card) => card.cardId === cardId);
+      // Return the comments if the card is found, or an empty array if not
+      return card?.comments || [];
+    }
+    // Return an empty array if the list is not found
+    return [];
+  });
+  console.log(`Comments:> ${comments}`);
+
+  const cardDescription = useSelector((state: RootState) => {
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    if (list) {
+      const card = list.cards.find((card) => card.cardId === cardId);
+      return card ? card.desc : null;
+    }
+    return null;
+  });
 
   const dispatch = useDispatch<AppDispatch>();
-  const toolbarOptions = [ // tool bar options for quill text field
+  const toolbarOptions = [
+    // tool bar options for quill text field
     [{ header: [1, 2, 3, 4, 5, 6, false] }],
     ["bold", "italic", "underline", "strike"],
     [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
@@ -63,14 +95,21 @@ const CardModal: FC<CardModal> = ({
   };
   const [titalValue, setTitalValue] = useState(title);
   const [descValue, setDescValue] = useState("");
+  const [isDescSaved, setIsDescSaved] = useState(false);
   const [commValue, setCommValue] = useState("");
   const [showDetails, setShowDetails] = useState(true);
   const [isEdit, setIsEdit] = useState(false);
   const [isDescClick, setIsDescClick] = useState(false);
   const [isCommentClick, setIsCommentClick] = useState(false);
-  const [isComment, setIsComment] = useState(true);
+  const [isComment, setIsComment] = useState(false);
+
+  const [name, setName] = useState("Com Name");
 
   const isCommentValChange = commValue.replace(/<(.|\n)*?>/g, "").trim() !== ""; // Check if there's any non-whitespace content
+  const isDescValEmpty = descValue.replace(/<(.|\n)*?>/g, "").trim() !== ""; // Check if there's any non-whitespace content
+  // const isDescValEmpty = cardDescription
+  //   ? cardDescription.replace(/<(.|\n)*?>/g, "").trim() !== ""
+  //   : false; // Handle null case by returning false
 
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(
     null
@@ -106,16 +145,86 @@ const CardModal: FC<CardModal> = ({
 
   const handleDescBlur = () => {
     // Desc blur
-    console.log("Desc was entered.");
-    // custom logic here
-    // dispatch(setCardDesc(descValue));
+    if (descValue != "") {
+      setIsDescSaved(true);
+      console.log("Desc was entered and saved.");
+      const payload = {
+        listId: listId,
+        cardId: cardId,
+        description: descValue,
+      };
+      dispatch(addDescription(payload));
+      setIsEdit(true);
+    }
+    if (!isDescValEmpty) {
+      // handleDescCancel();
+      setIsEdit(false);
+      setIsDescClick(false);
+      setIsDescSaved(true);
+      setDescValue("");
+    }
+  };
+
+  const handleDescQuillChange = (value: string) => {
+    setDescValue(value); // Update state with new content
   };
 
   const handleCommentBlur = () => {
-    // Comment blur
-    console.log("Comment was entered.");
-    // custom logic here
-    // dispatch(addCardActivity({ id: 0, name: "User Name", comment: commValue }));
+    if (commValue.trim() && name.trim()) {
+      // Dispatch the addComment action with the required payload
+      dispatch(
+        addComment({
+          listId,
+          cardId,
+          name,
+          commValue,
+        })
+      );
+
+      // Clear the input fields after submitting
+      setCommValue("");
+      setIsComment(true);
+      setIsCommentClick(false);
+      console.log("Commet Added.");
+    }
+  };
+
+  const showDescQuill = () => {
+    setIsDescSaved(false);
+    setIsDescClick(true);
+  };
+
+  const handleDescCancel = () => {
+    setDescValue(cardDescription ?? "");
+    console.log(`is Desc value: ${isDescValEmpty}`);
+    if (isDescValEmpty && descValue) {
+      console.log(`Desc not empty (0): ${isDescClick}`);
+      setIsDescClick(true);
+      setIsDescSaved(true);
+      setIsEdit(true);
+    } else if (cardDescription != "<p><br></p>" && !isDescValEmpty) {
+      console.log(
+        `Desc not empty (1): ${isDescValEmpty} : ${cardDescription}.`
+      );
+      setIsDescClick(true);
+      setIsDescSaved(true);
+      setIsEdit(true);
+    } else if (cardDescription != "" && !isDescValEmpty) {
+      console.log(
+        `Desc not empty (1.1): ${isDescValEmpty} : ${cardDescription}.`
+      );
+      setIsDescClick(true);
+      setIsDescSaved(true);
+      setIsEdit(true);
+    } else if (cardDescription == "" && !isDescValEmpty) {
+      console.log(`All desc empty (2): ${isDescValEmpty}`);
+      setIsDescClick(false);
+      setIsDescSaved(true);
+    } else {
+      console.log(`Desc not empty (3): ${isDescClick}`);
+      setIsDescClick(false);
+      setIsDescSaved(false);
+    }
   };
 
   useEffect(() => {
@@ -129,6 +238,7 @@ const CardModal: FC<CardModal> = ({
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
       disableAutoFocus
+      sx={{ overflow: "auto" }}
     >
       <Box
         sx={{
@@ -138,7 +248,7 @@ const CardModal: FC<CardModal> = ({
           left: "50%",
           transform: "translate(-50%, -50%)",
           width: "750px",
-          //   height: "",
+          maxHeight: "90%",
           bgcolor: "#F1F2F4",
           boxShadow: 1,
           p: "22px",
@@ -254,6 +364,11 @@ const CardModal: FC<CardModal> = ({
                 </Stack>
                 {isEdit ? (
                   <IconButton
+                    onClick={() => {
+                      setIsDescClick(true);
+                      setIsDescSaved(false);
+                      setIsEdit(false);
+                    }}
                     sx={{
                       mt: "7px",
                       color: "#172B4D",
@@ -276,17 +391,18 @@ const CardModal: FC<CardModal> = ({
                 )}
               </Stack>
               <br />
-              {/* <TextareaAutosize minRows={2} /> */}
 
               {!isDescClick ? (
                 <Box
                   onClick={() => {
-                    setIsDescClick(!isDescClick);
+                    setIsDescClick(true);
+                    setIsDescSaved(false);
                   }}
                   sx={{
                     height: "60px",
                     cursor: "pointer",
                     p: "10px",
+                    ml: "30px",
                     borderRadius: "3px",
                     backgroundColor: "#e4e6ea",
                     "&:hover": {
@@ -306,15 +422,13 @@ const CardModal: FC<CardModal> = ({
                     Add a more detailed description...
                   </Typography>
                 </Box>
-              ) : (
-                <Box>
+              ) : !isDescSaved ? (
+                <Box sx={{ ml: "30px" }}>
                   <ReactQuill
                     modules={module}
                     theme="snow"
                     value={descValue}
-                    onChange={setDescValue}
-                    onBlur={handleDescBlur}
-                    // style={{ minHeight: "200px" }}
+                    onChange={handleDescQuillChange}
                   />
                   <Stack direction={"row"} gap={1.5}>
                     <IconButton
@@ -336,7 +450,9 @@ const CardModal: FC<CardModal> = ({
                       </Typography>
                     </IconButton>
                     <IconButton
-                      onClick={() => setIsDescClick(!isDescClick)}
+                      onClick={() => {
+                        handleDescCancel();
+                      }}
                       sx={{
                         mt: "7px",
                         color: "#172B4D",
@@ -355,6 +471,27 @@ const CardModal: FC<CardModal> = ({
                       </Typography>
                     </IconButton>
                   </Stack>
+                </Box>
+              ) : (
+                <Box
+                  sx={{ cursor: "pointer", ml: "30px" }}
+                  onClick={() => {
+                    showDescQuill();
+                    // setIsDescSaved(false);
+                    // setIsDescClick(true);
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      color: palette.color.textColor.cardModalLightTextColor,
+                    }}
+                  >
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: cardDescription ?? "",
+                      }}
+                    />
+                  </Typography>
                 </Box>
               )}
 
@@ -476,79 +613,24 @@ const CardModal: FC<CardModal> = ({
                 )}
               </Stack>
 
-              {isComment ? (
-                <Stack
-                  direction={"row"}
-                  gap={1}
-                  sx={{ width: "100%", mt: "20px" }}
-                >
-                  <Avatar
-                    alt="A"
-                    src=""
-                    sx={{ width: "32px", height: "32px" }}
-                  />
-                  <Stack direction={"column"} gap={0.5} sx={{ width: "100%" }}>
-                    <Typography
-                      variant="text-xs-bold"
-                      sx={{ color: palette.color.textColor.cardModalTextColor }}
-                    >
-                      User Name
-                    </Typography>
-                    <Box
-                      sx={{
-                        width: "100%",
-                        p: "7px",
-                        borderRadius: "7px",
-                        boxShadow: `rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px`,
-                        backgroundColor: palette.base.white,
-                        "&:hover": {
-                          color: "#172B4D",
-                          backgroundColor: "#F7F8F9",
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="text-sm-medium"
-                        sx={{
-                          mx: "5px",
-                          color:
-                            palette.color.textColor
-                              .cardModalLightCommentTextColor,
-                        }}
-                      >
-                        comment...
-                      </Typography>
-                    </Box>
-                    <Stack direction={"row"} gap={1}>
-                      <Link sx={{ cursor: "pointer" }}>
-                        <Typography
-                          variant="text-xs-small"
-                          sx={{
-                            color:
-                              palette.color.textColor.cardModalLightTextColor,
-                          }}
-                        >
-                          Edit
-                        </Typography>
-                      </Link>
-                      <Divider />
-                      <Link sx={{ cursor: "pointer" }}>
-                        <Typography
-                          variant="text-xs-small"
-                          sx={{
-                            color:
-                              palette.color.textColor.cardModalLightTextColor,
-                          }}
-                        >
-                          Delete
-                        </Typography>
-                      </Link>
-                    </Stack>
-                  </Stack>
-                </Stack>
-              ) : (
-                <></>
-              )}
+              {/* {isComment ? <Comment name={name} comment={commValue} /> : <></>} */}
+
+              <div>
+                {comments.length > 0 ? (
+                  comments.map((comment) => (
+                    <Comment
+                      listId={listId}
+                      cardId={cardId}
+                      key={comment.id}
+                      name={comment.name}
+                      date={comment.date}
+                      comment={comment.message}
+                    />
+                  ))
+                ) : (
+                  <></>
+                )}
+              </div>
             </Stack>
 
             {/* right section */}

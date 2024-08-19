@@ -18,39 +18,22 @@ import { FC, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState, useAppSelecter } from "@/redux/store";
 import { setFullCard } from "@/redux/features/task-card-slice";
+import { addCard } from "@/redux/features/task-list-slice";
 
 interface TaskListProps {
-  lisIid: number;
+  listId: string;
   title: string;
 }
 
-const TaskList: FC<TaskListProps> = ({ lisIid, title }) => {
-  // const taskCard = useSelector(
-  //   (state: RootState) => state.rootReducer.taskcard
-  // );
-  // const dispatch = useDispatch<AppDispatch>();
-
+const TaskList: FC<TaskListProps> = ({ listId, title }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  // Getting the list of cards from the Redux store for this specific listId
+  const cards = useSelector(
+    (state: RootState) =>
+      state.rootReducer.tasklist.value.find((list) => list.listId === listId)
+        ?.cards || []
+  );
   const [isAddCard, setIsAddCard] = useState(false);
-  const [taskCard, setTaskCard] = useState([
-    {
-      id: 1,
-      title: "Card title",
-      desc: "Desc A",
-      date: "",
-      dueDate: "",
-      activity: [
-        {
-          name: "Name A",
-          comment: "Comment A",
-        },
-      ],
-      members: [
-        {
-          name: "Member A",
-        },
-      ],
-    },
-  ]);
 
   const [newCardTitle, setNewCardTitle] = useState("");
 
@@ -59,48 +42,9 @@ const TaskList: FC<TaskListProps> = ({ lisIid, title }) => {
   };
 
   const handleAddCardClick =
-    (listId: number) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    (listId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
       if (newCardTitle.trim() !== "") {
-        const cardCount =
-          taskCard.find((list) => list.listId === listId)?.cards.length || 0;
-        const newCardId = cardCount + 1;
-        // dispatch(
-        //   setFullCard({
-        //     listId,
-        //     card: {
-        //       cid: newCardId,
-        //       title: newCardTitle,
-        //       desc: "",
-        //       date: "",
-        //       dueDate: "",
-        //       activity: [
-        //         {
-        //           id: 0,
-        //           name: "",
-        //           comment: "",
-        //         },
-        //       ],
-        //       members: [
-        //         {
-        //           id: 0,
-        //           name: "",
-        //         },
-        //       ],
-        //     },
-        //   })
-        // );
-
-        const newCard = {
-          id: taskCard.length + 1,
-          title: newCardTitle,
-          desc: "New Description",
-          date: "",
-          dueDate: "",
-          activity: [],
-          members: [],
-        };
-
-        setTaskCard((prevTaskCard) => [...prevTaskCard, newCard]);
+        dispatch(addCard({ listId, cardTitle: newCardTitle })); // Dispatch the action with listId and cardTitle
         setNewCardTitle("");
         setIsAddCard(false);
       }
@@ -166,15 +110,15 @@ const TaskList: FC<TaskListProps> = ({ lisIid, title }) => {
           backgroundColor: palette.color.listColors.bg,
         }}
       >
-         {taskCard.map((card) => (
-          <ListCard key={card.id} title={card.title} listTitle={title} />
-        ))} 
-
-        {/* {taskCard
-          .find((list) => list.listId === 1)
-          ?.cards.map((card) => (
-            <ListCard key={card.cid} title={card.title} listTitle={title} />
-          ))} */}
+        {cards.map((card) => (
+          <ListCard
+            key={card.cardId}
+            cardId={card.cardId}
+            listId={listId}
+            title={card.title}
+            listTitle={title}
+          />
+        ))}
       </Box>
 
       {/* Add new cards section */}
@@ -210,7 +154,7 @@ const TaskList: FC<TaskListProps> = ({ lisIid, title }) => {
             sx={{ width: "100%" }}
           />
           <Stack direction={"row"} gap={1}>
-            <Button variant="contained" onClick={handleAddCardClick(lisIid)}>
+            <Button variant="contained" onClick={handleAddCardClick(listId)}>
               Add Card
             </Button>
             <IconButton size="small" onClick={() => setIsAddCard(false)}>

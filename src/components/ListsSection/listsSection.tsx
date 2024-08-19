@@ -13,17 +13,17 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { TaskList } from "../TaskList";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { palette } from "@/theme/palette";
-import { useDispatch } from "react-redux";
-import { AppDispatch, useAppSelecter } from "@/redux/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { addList } from "@/redux/features/task-list-slice";
 
 const ListsSection = () => {
   const dispatch = useDispatch<AppDispatch>();
+  // Fetch the task lists from Redux store
+  const taskLists = useSelector(
+    (state: RootState) => state.rootReducer.tasklist.value
+  );
   const [listTitle, setListTitle] = useState("");
-  const [taskLists, setTaskLists] = useState([
-    { id: 1, title: "To Do" },
-    { id: 2, title: "In Progress" },
-    { id: 3, title: "Done" },
-  ]);
 
   const [isAddList, setIsAddList] = useState(false);
 
@@ -36,12 +36,10 @@ const ListsSection = () => {
   };
 
   const handleAddListButtonClick = () => {
-    const newList = {
-      id: taskLists.length + 1,
-      title: `${listTitle}`,
-    };
-    setTaskLists((prevTaskLists) => [...prevTaskLists, newList]);
-    setIsAddList(false);
+    if (listTitle.trim() !== "") {
+      dispatch(addList(listTitle));
+      setIsAddList(false);
+    }
   };
 
   return (
@@ -56,7 +54,11 @@ const ListsSection = () => {
     >
       <Stack direction={"row"} gap={1.5} alignItems="flex-start">
         {taskLists.map((list) => (
-          <TaskList key={list.id} lisIid={list.id} title={list.title} />
+          <TaskList
+            key={list.listId}
+            listId={list.listId}
+            title={list.listTitle}
+          />
         ))}
 
         {!isAddList ? (

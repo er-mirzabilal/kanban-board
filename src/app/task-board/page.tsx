@@ -6,7 +6,7 @@ export default function TaskBoard() {
   return (
     <div>
       <Container
-        maxWidth="xl"
+        maxWidth={false}
         sx={{
           overflowY: "auto",
           height: "100vh",

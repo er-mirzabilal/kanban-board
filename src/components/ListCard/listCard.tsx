@@ -22,8 +22,9 @@ const style = {
 };
 
 interface ListCard {
+  listId: string;
   listTitle: string;
-  id?: number;
+  cardId: string;
   title: string;
   desc?: string;
   date?: string;
@@ -42,8 +43,9 @@ interface ListCard {
 }
 
 const ListCard: FC<ListCard> = ({
+  listId,
   listTitle,
-  id,
+  cardId,
   title,
   desc,
   date,
@@ -116,12 +118,20 @@ const ListCard: FC<ListCard> = ({
         </Stack>
       </Stack>
       <CardModal
+        listId={listId}
+        cardId={cardId}
         title={title}
         listName={listTitle}
         openModal={open}
         onCloseModal={handleClose}
       />
-      <Button variant="contained" onClick={handleOpen}>Open</Button>
+      <Button
+        variant="contained"
+        sx={{ width: "100%", mt: "5px", backgroundColor: "#aaa" }}
+        onClick={handleOpen}
+      >
+        Open
+      </Button>
       {/* <Button onClick={handleOpen}>Open modal</Button>
       <Modal
         open={open}
