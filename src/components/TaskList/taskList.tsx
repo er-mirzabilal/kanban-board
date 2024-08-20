@@ -17,8 +17,7 @@ import { FC, useState } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState, useAppSelecter } from "@/redux/store";
-import { setFullCard } from "@/redux/features/task-card-slice";
-import { addCard } from "@/redux/features/task-list-slice";
+import { addCard, addListTitle } from "@/redux/features/task-list-slice";
 
 interface TaskListProps {
   listId: string;
@@ -26,6 +25,15 @@ interface TaskListProps {
 }
 
 const TaskList: FC<TaskListProps> = ({ listId, title }) => {
+  const listTitle = useSelector((state: RootState) => {
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    if (list) {
+      return list ? list.listTitle : null;
+    }
+    return null;
+  });
   const dispatch = useDispatch<AppDispatch>();
   // Getting the list of cards from the Redux store for this specific listId
   const cards = useSelector(
@@ -34,8 +42,8 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
         ?.cards || []
   );
   const [isAddCard, setIsAddCard] = useState(false);
-
   const [newCardTitle, setNewCardTitle] = useState("");
+  const [titalValue, setTitalValue] = useState(title);
 
   const handleAddACardClick = () => {
     setIsAddCard(true);
@@ -49,6 +57,19 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
         setIsAddCard(false);
       }
     };
+
+  const handleTitleBlur = () => {
+    // Title blur
+    if (titalValue.trim() != "") {
+      const payload = {
+        listId: listId,
+        listTitle: titalValue,
+      };
+      dispatch(addListTitle(payload));
+    } else {
+      setTitalValue(listTitle || "");
+    }
+  };
 
   return (
     <Box
@@ -78,7 +99,14 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
         }}
       >
         <TextField
-          defaultValue={title || "Title"}
+          value={titalValue}
+          onChange={(e) => setTitalValue(e.target.value)}
+          onBlur={handleTitleBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleTitleBlur();
+            }
+          }}
           sx={{
             width: "224px",
             border: "none",
@@ -90,6 +118,9 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
             "& .MuiOutlinedInput-root": {
               "& fieldset": {
                 border: "none", // Removes the border
+              },
+              "&.Mui-focused fieldset": {
+                border: "2px solid #0c66e4", // Change the border color when focused
               },
             },
           }}

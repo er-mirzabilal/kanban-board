@@ -18,6 +18,7 @@ import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalL
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import QueryBuilderRoundedIcon from "@mui/icons-material/QueryBuilderRounded";
 import NotesIcon from "@mui/icons-material/Notes";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import "quill/dist/quill.core.css";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -26,9 +27,10 @@ import { MembersPopover } from "../MembersPopover";
 import { DatePopover } from "../DatePopover";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState, useAppSelecter } from "@/redux/store";
-import { addDescription } from "@/redux/features/task-list-slice";
+import { addDescription, addCardTitle } from "@/redux/features/task-list-slice";
 import { addComment } from "@/redux/features/task-list-slice";
 import { Comment } from "../Comment";
+import dayjs from "dayjs";
 
 interface CardModal {
   listId: string;
@@ -55,6 +57,17 @@ const CardModal: FC<CardModal> = ({
   //   },
   // ]);
 
+  const cardTitle = useSelector((state: RootState) => {
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    if (list) {
+      const card = list.cards.find((card) => card.cardId === cardId);
+      return card ? card.title : null;
+    }
+    return null;
+  });
+
   const comments = useSelector((state: RootState) => {
     // Find the list by listId
     const list = state.rootReducer.tasklist.value.find(
@@ -69,7 +82,6 @@ const CardModal: FC<CardModal> = ({
     // Return an empty array if the list is not found
     return [];
   });
-  console.log(`Comments:> ${comments}`);
 
   const cardDescription = useSelector((state: RootState) => {
     const list = state.rootReducer.tasklist.value.find(
@@ -78,6 +90,52 @@ const CardModal: FC<CardModal> = ({
     if (list) {
       const card = list.cards.find((card) => card.cardId === cardId);
       return card ? card.desc : null;
+    }
+    return null;
+  });
+
+  // const cardStartDate = useSelector((state: RootState) => {
+  //   const list = state.rootReducer.tasklist.value.find(
+  //     (list) => list.listId === listId
+  //   );
+  //   if (list) {
+  //     const card = list.cards.find((card) => card.cardId === cardId);
+  //     return card ? card.startDate : null;
+  //   }
+  //   return null;
+  // });
+
+  const cardStartDate = useSelector((state: RootState) => {
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    if (list) {
+      const card = list.cards.find((card) => card.cardId === cardId);
+      return card && card.startDate
+        ? dayjs(card.startDate).format("D MMM")
+        : null;
+    }
+    return null;
+  });
+
+  // const cardDueDate = useSelector((state: RootState) => {
+  //   const list = state.rootReducer.tasklist.value.find(
+  //     (list) => list.listId === listId
+  //   );
+  //   if (list) {
+  //     const card = list.cards.find((card) => card.cardId === cardId);
+  //     return card ? card.dueDate : null;
+  //   }
+  //   return null;
+  // });
+
+  const cardDueDate = useSelector((state: RootState) => {
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    if (list) {
+      const card = list.cards.find((card) => card.cardId === cardId);
+      return card && card.dueDate ? dayjs(card.dueDate).format("D MMM") : null;
     }
     return null;
   });
@@ -139,8 +197,19 @@ const CardModal: FC<CardModal> = ({
 
   const handleTitleBlur = () => {
     // Title blur
-    console.log("Title was entered.");
-    // dispatch(setCardTitle(titalValue));
+    if (titalValue.trim() != "") {
+      // console.log(`Title was entered and saved. Which is : ${titalValue}`);
+      const payload = {
+        listId: listId,
+        cardId: cardId,
+        cardTitle: titalValue,
+      };
+      dispatch(addCardTitle(payload));
+      setIsEdit(true);
+    } else {
+      // console.log(`Title value is : ${titalValue}`);
+      setTitalValue(cardTitle || "");
+    }
   };
 
   const handleDescBlur = () => {
@@ -202,16 +271,23 @@ const CardModal: FC<CardModal> = ({
       setIsDescClick(true);
       setIsDescSaved(true);
       setIsEdit(true);
-    } else if (cardDescription != "<p><br></p>" && !isDescValEmpty) {
+    } else if (cardDescription == "" && !isDescValEmpty) {
       console.log(
         `Desc not empty (1): ${isDescValEmpty} : ${cardDescription}.`
+      );
+      setIsDescClick(false);
+      setIsDescSaved(false);
+      setIsEdit(false);
+    } else if (cardDescription != "<p><br></p>" && !isDescValEmpty) {
+      console.log(
+        `Desc not empty (1.1): ${isDescValEmpty} : ${cardDescription}.`
       );
       setIsDescClick(true);
       setIsDescSaved(true);
       setIsEdit(true);
     } else if (cardDescription != "" && !isDescValEmpty) {
       console.log(
-        `Desc not empty (1.1): ${isDescValEmpty} : ${cardDescription}.`
+        `Desc not empty (1.2): ${isDescValEmpty} : ${cardDescription}.`
       );
       setIsDescClick(true);
       setIsDescSaved(true);
@@ -270,11 +346,16 @@ const CardModal: FC<CardModal> = ({
                 sx={{ color: palette.color.iconColors.cardModalIconColor }}
               />
               <TextField
-                defaultValue={title}
+                value={titalValue}
                 onChange={(e) => setTitalValue(e.target.value)}
                 onBlur={handleTitleBlur}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleTitleBlur();
+                  }
+                }}
                 sx={{
-                  width: "224px",
+                  width: "100%",
                   border: "none",
                   "& .MuiInputBase-input": {
                     fontSize: "18px", // Change the font size
@@ -284,6 +365,9 @@ const CardModal: FC<CardModal> = ({
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": {
                       border: "none", // Removes the border
+                    },
+                    "&.Mui-focused fieldset": {
+                      border: "2px solid #0c66e4", // Change the border color when focused
                     },
                   },
                 }}
@@ -305,7 +389,7 @@ const CardModal: FC<CardModal> = ({
               <CloseRoundedIcon sx={{ cursor: "pointer" }} />
             </IconButton>
           </Stack>
-          <Stack direction={"row"}>
+          <Stack direction={"column"}>
             <Stack
               direction={"row"}
               gap={0.5}
@@ -340,13 +424,59 @@ const CardModal: FC<CardModal> = ({
             {/* description and comments section */}
 
             <Stack direction={"column"} sx={{ width: "70%" }}>
+              {cardDueDate || cardStartDate ? (
+                <Stack direction={"column"} sx={{ ml: "100px" }}>
+                  <Typography
+                    variant="text-xs-semibold"
+                    sx={{
+                      color: palette.color.textColor.cardModalLightTextColor,
+                    }}
+                  >
+                    {cardDueDate && cardStartDate
+                      ? "Dates"
+                      : cardStartDate
+                      ? "Date"
+                      : "Due Date"}
+                  </Typography>
+                  <IconButton
+                    onClick={handleDatesClick}
+                    sx={{
+                      minWidth: "70px",
+                      maxWidth: cardStartDate
+                        ? cardDueDate
+                          ? "165px"
+                          : "110px"
+                        : "110px",
+                      mt: "7px",
+                      color: "#172B4D",
+                      display: "flex",
+                      justifyContent: "flex-start",
+                      backgroundColor: "#e4e6ea",
+                      "&:hover": {
+                        color: "#172B4D",
+                        backgroundColor:
+                          palette.color.buttonColors.cardModalButtonHover,
+                      },
+                    }}
+                  >
+                    <Typography variant="text-sm-medium" sx={{ mx: "5px" }}>
+                      {cardStartDate ? `${cardStartDate} - ` : ""}
+                      {cardDueDate}
+                    </Typography>
+                    <KeyboardArrowDownRoundedIcon />
+                  </IconButton>
+                </Stack>
+              ) : (
+                <></>
+              )}
+
               <Stack
                 direction={"row"}
                 justifyContent={"space-between"}
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  mt: "50px",
+                  mt: "10px",
                 }}
               >
                 <Stack direction={"row"} gap={1}>
@@ -621,6 +751,7 @@ const CardModal: FC<CardModal> = ({
                     <Comment
                       listId={listId}
                       cardId={cardId}
+                      commentId={comment.id}
                       key={comment.id}
                       name={comment.name}
                       date={comment.date}
@@ -701,6 +832,8 @@ const CardModal: FC<CardModal> = ({
                 </Typography>
               </IconButton>
               <DatePopover
+                listId={listId}
+                cardId={cardId}
                 isOpen={openDatesPopover}
                 anchorEl={anchorElDates}
                 onClose={handleDatesClose}

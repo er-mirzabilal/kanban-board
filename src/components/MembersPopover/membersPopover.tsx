@@ -74,6 +74,7 @@ const MembersPopover: React.FC<MembersPopover> = ({
             alignItems: "center",
             justifyContent: "flex-start",
             borderRadius: "5px",
+            cursor: "pointer",
             "&:hover": {
               backgroundColor: palette.color.gray[10],
             },

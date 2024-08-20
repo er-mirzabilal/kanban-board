@@ -8,26 +8,75 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { DateField } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
+import { useDispatch } from "react-redux";
+import { updateCardDates } from "@/redux/features/task-list-slice";
 
 interface DatePopover {
+  listId: string;
+  cardId: string;
   isOpen: boolean;
   anchorEl: HTMLButtonElement | null;
   onClose: () => void;
 }
 
-const DatePopover: React.FC<DatePopover> = ({ isOpen, anchorEl, onClose }) => {
+const DatePopover: React.FC<DatePopover> = ({
+  listId,
+  cardId,
+  isOpen,
+  anchorEl,
+  onClose,
+}) => {
+  const dispatch = useDispatch();
   const [isStartDateChecked, setIsStartDateChecked] = React.useState(false);
   const [isDueDateChecked, setIsDueDateChecked] = React.useState(true);
 
   const [startDateValue, setStartDateValue] = React.useState<Dayjs | null>(
     dayjs()
   );
+  const [dueDateValue, setDueDateValue] = React.useState<Dayjs | null>(dayjs());
+
+  const [focusedField, setFocusedField] = React.useState<
+    "start" | "due" | null
+  >(null);
 
   const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setIsStartDateChecked(event.target.checked);
   };
-  const handleDueDateCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleDueDateCheckboxChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setIsDueDateChecked(event.target.checked);
+  };
+
+  const handleCalendarChange = (newValue: Dayjs | null) => {
+    if (newValue) {
+      if (focusedField === "start" && isStartDateChecked) {
+        setStartDateValue(newValue);
+        // Ensure the due date is not earlier than the start date
+        if (dueDateValue && newValue.isAfter(dueDateValue)) {
+          setDueDateValue(newValue);
+        }
+      } else if (focusedField === "due" && isDueDateChecked) {
+        // Ensure the due date is not earlier than the start date
+        setDueDateValue(newValue);
+        if (startDateValue && newValue.isBefore(startDateValue)) {
+          setStartDateValue(newValue);
+        }
+      }
+    }
+  };
+
+  const handleSaveClick = () => {
+    dispatch(
+      updateCardDates({
+        listId,
+        cardId,
+        startDate: isStartDateChecked ? startDateValue : null,
+        dueDate: isDueDateChecked ? dueDateValue : null,
+      })
+    );
+    onClose(); // Close the popover after saving
   };
 
   const open = Boolean(anchorEl);
@@ -53,7 +102,7 @@ const DatePopover: React.FC<DatePopover> = ({ isOpen, anchorEl, onClose }) => {
       >
         <Stack
           direction={"column"}
-          gap={3}
+          gap={2}
           sx={{ display: "flex", alignItems: "center", p: "10px" }}
         >
           <Typography
@@ -63,7 +112,10 @@ const DatePopover: React.FC<DatePopover> = ({ isOpen, anchorEl, onClose }) => {
             Dates
           </Typography>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DateCalendar />
+            <DateCalendar
+              value={focusedField === "start" ? startDateValue : dueDateValue}
+              onChange={handleCalendarChange}
+            />
           </LocalizationProvider>
         </Stack>
         <Typography
@@ -73,7 +125,6 @@ const DatePopover: React.FC<DatePopover> = ({ isOpen, anchorEl, onClose }) => {
             alignItems: "flex-start",
             pl: "10px",
             pt: "10px",
-
             color: palette.color.textColor.cardModalLightTextColor,
           }}
         >
@@ -87,8 +138,9 @@ const DatePopover: React.FC<DatePopover> = ({ isOpen, anchorEl, onClose }) => {
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DateField
               sx={{ width: "120px" }}
-              value={startDateValue}
+              value={isStartDateChecked ? startDateValue : null}
               onChange={(newValue) => setStartDateValue(newValue)}
+              onFocus={() => setFocusedField("start")}
               disabled={!isStartDateChecked}
             />
           </LocalizationProvider>
@@ -100,22 +152,22 @@ const DatePopover: React.FC<DatePopover> = ({ isOpen, anchorEl, onClose }) => {
             alignItems: "flex-start",
             pl: "10px",
             pt: "10px",
-
             color: palette.color.textColor.cardModalLightTextColor,
           }}
         >
           Due Date
         </Typography>
         <Stack direction={"row"} sx={{ display: "flex", alignItems: "center" }}>
-          <Checkbox 
-          checked={isDueDateChecked}
-          onChange={handleDueDateCheckboxChange}
+          <Checkbox
+            checked={isDueDateChecked}
+            onChange={handleDueDateCheckboxChange}
           />
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DateField
               sx={{ width: "120px" }}
-              value={startDateValue}
-              onChange={(newValue) => setStartDateValue(newValue)}
+              value={isDueDateChecked ? dueDateValue : null}
+              onChange={(newValue) => setDueDateValue(newValue)}
+              onFocus={() => setFocusedField("due")}
               disabled={!isDueDateChecked}
             />
           </LocalizationProvider>
@@ -123,6 +175,7 @@ const DatePopover: React.FC<DatePopover> = ({ isOpen, anchorEl, onClose }) => {
 
         <Stack direction={"column"} gap={1} sx={{ p: "10px" }}>
           <IconButton
+            onClick={handleSaveClick}
             sx={{
               display: "flex",
               width: "100%",

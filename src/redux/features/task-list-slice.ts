@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction, nanoid } from "@reduxjs/toolkit";
 import { RootState } from "../store";
+import { Dayjs } from "dayjs";
 
 export interface CommentDetail {
   id: number;
@@ -39,6 +40,13 @@ interface AddCardCommentPayload {
   cardId: string;
   name: string;
   commValue: string;
+}
+
+interface UpdateCardDatesPayload {
+  listId: string;
+  cardId: string;
+  startDate: Dayjs | null;
+  dueDate: Dayjs | null;
 }
 
 type ListState = {
@@ -141,6 +149,62 @@ export const listSlice = createSlice({
       }
     },
 
+    updateCardDates: (state, action: PayloadAction<UpdateCardDatesPayload>) => {
+      const { listId, cardId, startDate, dueDate } = action.payload;
+
+      const list = state.value.find((list) => list.listId === listId);
+      if (list) {
+        const card = list.cards.find((card) => card.cardId === cardId);
+        if (card) {
+          if (startDate !== null) {
+            card.startDate = startDate.toISOString();
+          } else if (startDate === null) {
+            card.startDate = startDate;
+          }
+
+          if (dueDate !== null) {
+            card.dueDate = dueDate.toISOString();
+          } else if (dueDate === null) {
+            card.dueDate = dueDate;
+          }
+        }
+      }
+    },
+
+    addListTitle: (
+      state,
+      action: PayloadAction<{
+        listId: string;
+        listTitle: string;
+      }>
+    ) => {
+      const { listId, listTitle } = action.payload;
+
+      const list = state.value.find((list) => list.listId === listId);
+      if (list) {
+        list.listTitle = listTitle;
+      }
+    },
+
+    addCardTitle: (
+      state,
+      action: PayloadAction<{
+        listId: string;
+        cardId: string;
+        cardTitle: string;
+      }>
+    ) => {
+      const { listId, cardId, cardTitle } = action.payload;
+
+      const list = state.value.find((list) => list.listId === listId);
+      if (list) {
+        const card = list.cards.find((card) => card.cardId === cardId);
+        if (card) {
+          card.title = cardTitle; // Update the title
+        }
+      }
+    },
+
     addDescription: (state, action: PayloadAction<AddCardDescPayload>) => {
       const { listId, cardId, description } = action.payload;
 
@@ -177,8 +241,66 @@ export const listSlice = createSlice({
         }
       }
     },
+
+    editComment: (
+      state,
+      action: PayloadAction<{
+        listId: string;
+        cardId: string;
+        commentId: number;
+        newMessage: string;
+      }>
+    ) => {
+      const { listId, cardId, commentId, newMessage } = action.payload;
+
+      const list = state.value.find((list) => list.listId === listId);
+      if (list) {
+        const card = list.cards.find((card) => card.cardId === cardId);
+        if (card && card.comments) {
+          const comment = card.comments.find(
+            (comment) => comment.id === commentId
+          );
+          if (comment) {
+            // Update the comment's message
+            comment.message = newMessage;
+          }
+        }
+      }
+    },
+
+    deleteComment: (
+      state,
+      action: PayloadAction<{
+        listId: string;
+        cardId: string;
+        commentId: number;
+      }>
+    ) => {
+      const { listId, cardId, commentId } = action.payload;
+
+      const list = state.value.find((list) => list.listId === listId);
+      if (list) {
+        const card = list.cards.find((card) => card.cardId === cardId);
+        if (card && card.comments) {
+          // Remove the comment by filtering it out
+          card.comments = card.comments.filter(
+            (comment) => comment.id !== commentId
+          );
+        }
+      }
+    },
   },
 });
 
-export const { addList, addCard, addDescription, addComment } = listSlice.actions;
+export const {
+  addList,
+  addCard,
+  addListTitle,
+  addCardTitle,
+  updateCardDates,
+  addDescription,
+  addComment,
+  editComment,
+  deleteComment,
+} = listSlice.actions;
 export default listSlice.reducer;

@@ -8,6 +8,8 @@ import CreateRoundedIcon from "@mui/icons-material/CreateRounded";
 import React, { FC, useState } from "react";
 import Modal from "@mui/material/Modal";
 import { CardModal } from "../CardModal";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 const style = {
   position: "absolute" as "absolute",
@@ -57,6 +59,32 @@ const ListCard: FC<ListCard> = ({
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
   console.log(open);
+  const cardDescription = useSelector((state: RootState) => {
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    if (list) {
+      const card = list.cards.find((card) => card.cardId === cardId);
+      return card ? card.desc : null;
+    }
+    return null;
+  });
+
+  const comments = useSelector((state: RootState) => {
+    // Find the list by listId
+    const list = state.rootReducer.tasklist.value.find(
+      (list) => list.listId === listId
+    );
+    // If the list is found, find the card by cardId
+    if (list) {
+      const card = list.cards.find((card) => card.cardId === cardId);
+      // Return the comments if the card is found, or an empty array if not
+      return card?.comments || [];
+    }
+    // Return an empty array if the list is not found
+    return [];
+  });
+
   return (
     <Box
       sx={{
@@ -95,26 +123,35 @@ const ListCard: FC<ListCard> = ({
           sx={{ display: "flex", alignItems: "center", mt: "5px" }}
         >
           <Stack direction={"row"} gap={1}>
-            <NotesIcon
-              sx={{
-                width: "16px",
-                height: "16px",
-                color: palette.color.iconColors.cardModalIconColor,
-              }}
-            />
-            <ChatBubbleOutlineRoundedIcon
-              sx={{
-                width: "16px",
-                height: "16px",
-                color: palette.color.iconColors.cardModalIconColor,
-              }}
-            />
+            {cardDescription ? (
+              <NotesIcon
+                sx={{
+                  width: "16px",
+                  height: "16px",
+                  color: palette.color.iconColors.cardModalIconColor,
+                }}
+              />
+            ) : (
+              <></>
+            )}
+
+            {comments.length != 0 ? (
+              <ChatBubbleOutlineRoundedIcon
+                sx={{
+                  width: "16px",
+                  height: "16px",
+                  color: palette.color.iconColors.cardModalIconColor,
+                }}
+              />
+            ) : (
+              <></>
+            )}
           </Stack>
-          <Avatar
+          {/* <Avatar
             sx={{ width: "24px", height: "24px", backgroundColor: "#DE5737" }}
           >
             <Typography variant="text-xxs-medium">AY</Typography>
-          </Avatar>
+          </Avatar> */}
         </Stack>
       </Stack>
       <CardModal

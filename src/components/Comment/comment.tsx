@@ -13,22 +13,37 @@ import {
 import "quill/dist/quill.core.css";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { useDispatch, useSelector } from "react-redux";
+import { editComment, deleteComment } from "@/redux/features/task-list-slice";
 
 import React, { FC, useState } from "react";
 import { DeleteCommentPopover } from "../DeleteCommentPopover";
+import { AppDispatch } from "@/redux/store";
 
 interface CommentProps {
   listId: string;
   cardId: string;
+  commentId: number;
   name: string;
   date?: string;
   comment: string;
 }
 
-const Comment: FC<CommentProps> = ({ listId, cardId, name, date, comment }) => {
+const Comment: FC<CommentProps> = ({
+  listId,
+  cardId,
+  commentId,
+  name,
+  date,
+  comment,
+}) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(
     null
   );
+  const [newMessage, setNewMessage] = useState(comment);
+  const [isEditCommentClick, setIsEditCommentClick] = useState(false);
+
   const openDeletePopover = Boolean(anchorEl);
   const [isEditComment, setIsEditComment] = useState(false);
   const toolbarOptions = [
@@ -49,6 +64,29 @@ const Comment: FC<CommentProps> = ({ listId, cardId, name, date, comment }) => {
   const handleDeleteClose = () => {
     setAnchorEl(null);
   };
+
+  const handleSaveCommentBlur = () => {
+    if (newMessage.trim() && name.trim()) {
+      // Dispatch the editComment action with the required payload
+      dispatch(
+        editComment({
+          listId,
+          cardId,
+          commentId,
+          newMessage,
+        })
+      );
+
+      setIsEditComment(false);
+
+      console.log("Commet Added.");
+    }
+  };
+
+  const handleDelete = (listId: string, cardId: string, commentId: number) => {
+    dispatch(deleteComment({ listId, cardId, commentId }));
+  };
+
   return (
     <Stack direction={"row"} gap={1} sx={{ width: "100%", mt: "20px" }}>
       <Avatar alt="A" src="" sx={{ width: "32px", height: "32px" }} />
@@ -72,14 +110,13 @@ const Comment: FC<CommentProps> = ({ listId, cardId, name, date, comment }) => {
             <ReactQuill
               modules={module}
               theme="snow"
-              value={comment || ""}
-              //   onChange={(content) => setCommValue(content)}
+              value={newMessage || ""}
+              onChange={(content) => setNewMessage(content)}
               // onBlur={handleCommentBlur}
             />
             <Stack direction={"row"} gap={1.5}>
               <IconButton
-                // onClick={handleCommentBlur}
-                // disabled={!isCommentValChange}
+                onClick={handleSaveCommentBlur}
                 sx={{
                   mt: "7px",
                   color: palette.base.white,
@@ -180,6 +217,7 @@ const Comment: FC<CommentProps> = ({ listId, cardId, name, date, comment }) => {
             isOpen={openDeletePopover}
             anchorEl={anchorEl}
             onClose={handleDeleteClose}
+            onDelete={() => handleDelete(listId, cardId, commentId)}
           />
         </Stack>
       </Stack>

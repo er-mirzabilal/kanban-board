@@ -1,19 +1,23 @@
 import * as React from "react";
 import Popover from "@mui/material/Popover";
 import Typography from "@mui/material/Typography";
-import { Avatar, Button, IconButton, Stack, TextField } from "@mui/material";
+import { IconButton, Stack } from "@mui/material";
 import { palette } from "@/theme/palette";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/redux/store";
 
 interface DeleteCommentPopover {
   isOpen: boolean;
   anchorEl: HTMLButtonElement | null;
   onClose: () => void;
+  onDelete: () => void;
 }
 
 const DeleteCommentPopover: React.FC<DeleteCommentPopover> = ({
   isOpen,
   anchorEl,
   onClose,
+  onDelete,
 }) => {
   const open = Boolean(anchorEl);
   const id = open ? "simple-popover" : undefined;
@@ -42,13 +46,13 @@ const DeleteCommentPopover: React.FC<DeleteCommentPopover> = ({
           sx={{ display: "flex", alignItems: "center", p: "10px" }}
         >
           <Typography
-            variant="text-xs-semibold"
+            variant="text-sm-bold"
             sx={{ color: palette.color.textColor.cardModalTextColor }}
           >
             Delete comment?
           </Typography>
           <Typography
-            variant="text-xs-semibold"
+            variant="text-sm-medium"
             sx={{
               display: "flex",
               alignItems: "flex-start",
@@ -61,6 +65,7 @@ const DeleteCommentPopover: React.FC<DeleteCommentPopover> = ({
             Deleting a comment is forever. There is no undo.
           </Typography>
           <IconButton
+            onClick={onDelete}
             sx={{
               width: "100%",
               mt: "7px",
