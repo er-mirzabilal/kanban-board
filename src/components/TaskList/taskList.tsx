@@ -49,14 +49,13 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
     setIsAddCard(true);
   };
 
-  const handleAddCardClick =
-    (listId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-      if (newCardTitle.trim() !== "") {
-        dispatch(addCard({ listId, cardTitle: newCardTitle })); // Dispatch the action with listId and cardTitle
-        setNewCardTitle("");
-        setIsAddCard(false);
-      }
-    };
+  const handleAddCardClick = (listId: string) => {
+    if (newCardTitle.trim() !== "") {
+      dispatch(addCard({ listId, cardTitle: newCardTitle })); // Dispatch the action with listId and cardTitle
+      setNewCardTitle("");
+      setIsAddCard(false);
+    }
+  };
 
   const handleTitleBlur = () => {
     // Title blur
@@ -179,16 +178,30 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
       ) : (
         <Stack direction={"column"} gap={1} sx={{ mt: "10px" }}>
           <TextField
+            onChange={(e) => setNewCardTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleAddCardClick(listId);
+              }
+            }}
             placeholder={"Enter a name for this card..."}
             value={newCardTitle}
-            onChange={(e) => setNewCardTitle(e.target.value)}
             sx={{ width: "100%" }}
-          />
+          ></TextField>
           <Stack direction={"row"} gap={1}>
-            <Button variant="contained" onClick={handleAddCardClick(listId)}>
+            <Button
+              variant="contained"
+              onClick={() => handleAddCardClick(listId)}
+            >
               Add Card
             </Button>
-            <IconButton size="small" onClick={() => setIsAddCard(false)}>
+            <IconButton
+              size="small"
+              onClick={() => {
+                setIsAddCard(false);
+                setNewCardTitle("");
+              }}
+            >
               <CloseRoundedIcon sx={{ color: "black" }} />
             </IconButton>
           </Stack>

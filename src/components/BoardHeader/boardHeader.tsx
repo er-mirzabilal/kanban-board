@@ -114,7 +114,7 @@ const BoardHeader = () => {
                     },
                   }}
                   autoFocus
-                  defaultValue={boardTitle || "My Board"}
+                  value={boardTitle || "My Board"}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       handleboardTitleBlur();

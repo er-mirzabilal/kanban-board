@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit"; 
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 type InitialState = {
   value: BoardState;
@@ -13,7 +13,7 @@ type BoardState = {
 const initialState = {
   value: {
     isBoardTitle: true,
-    boardTitle: "Title",
+    boardTitle: "My Board",
     bid: "",
   } as BoardState,
 } as InitialState;

@@ -104,6 +104,11 @@ const ListsSection = () => {
           >
             <TextField
               onChange={(e) => setListTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAddListButtonClick();
+                }
+              }}
               placeholder={"Enter list name..."}
               sx={{ width: "100%" }}
             ></TextField>
