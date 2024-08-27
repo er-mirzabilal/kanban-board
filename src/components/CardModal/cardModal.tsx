@@ -4,7 +4,6 @@ import { palette } from "@/theme/palette";
 import {
   Avatar,
   Box,
-  Divider,
   IconButton,
   Link,
   Modal,
@@ -22,7 +21,7 @@ import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownR
 import "quill/dist/quill.core.css";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import React, { FC, useEffect, useState } from "react";
+import React, { FC, useRef, useEffect, useState } from "react";
 import { MembersPopover } from "../MembersPopover";
 import { DatePopover } from "../DatePopover";
 import { useDispatch, useSelector } from "react-redux";
@@ -56,7 +55,7 @@ const CardModal: FC<CardModal> = ({
   //     comment: "",
   //   },
   // ]);
-
+  const quillRef = useRef<ReactQuill | null>(null);
   const cardTitle = useSelector((state: RootState) => {
     const list = state.rootReducer.tasklist.value.find(
       (list) => list.listId === listId
@@ -198,7 +197,6 @@ const CardModal: FC<CardModal> = ({
   const handleTitleBlur = () => {
     // Title blur
     if (titalValue.trim() != "") {
-      // console.log(`Title was entered and saved. Which is : ${titalValue}`);
       const payload = {
         listId: listId,
         cardId: cardId,
@@ -207,7 +205,6 @@ const CardModal: FC<CardModal> = ({
       dispatch(addCardTitle(payload));
       setIsEdit(true);
     } else {
-      // console.log(`Title value is : ${titalValue}`);
       setTitalValue(cardTitle || "");
     }
   };
@@ -216,7 +213,6 @@ const CardModal: FC<CardModal> = ({
     // Desc blur
     if (descValue != "") {
       setIsDescSaved(true);
-      console.log("Desc was entered and saved.");
       const payload = {
         listId: listId,
         cardId: cardId,
@@ -254,7 +250,6 @@ const CardModal: FC<CardModal> = ({
       setCommValue("");
       setIsComment(true);
       setIsCommentClick(false);
-      console.log("Commet Added.");
     }
   };
 
@@ -304,8 +299,10 @@ const CardModal: FC<CardModal> = ({
   };
 
   useEffect(() => {
-    console.log(`Is Open: ${openModal}`);
-  }, [openModal]);
+    if (quillRef.current) {
+      quillRef.current.focus(); // focus for quill
+    }
+  }, [isDescClick]);
 
   return (
     <Modal
@@ -554,12 +551,15 @@ const CardModal: FC<CardModal> = ({
                 </Box>
               ) : !isDescSaved ? (
                 <Box sx={{ ml: "30px" }}>
-                  <ReactQuill
-                    modules={module}
-                    theme="snow"
-                    value={descValue}
-                    onChange={handleDescQuillChange}
-                  />
+                  <Box sx={{ backgroundColor: palette.base.white }}>
+                    <ReactQuill
+                      ref={quillRef}
+                      modules={module}
+                      theme="snow"
+                      value={descValue}
+                      onChange={handleDescQuillChange}
+                    />
+                  </Box>
                   <Stack direction={"row"} gap={1.5}>
                     <IconButton
                       onClick={handleDescBlur}
@@ -711,13 +711,15 @@ const CardModal: FC<CardModal> = ({
                   </Box>
                 ) : (
                   <Box sx={{ width: "100%" }}>
-                    <ReactQuill
-                      modules={module}
-                      theme="snow"
-                      value={commValue}
-                      onChange={(content) => setCommValue(content)}
-                      // onBlur={handleCommentBlur}
-                    />
+                    <Box sx={{ backgroundColor: palette.base.white }}>
+                      <ReactQuill
+                        modules={module}
+                        theme="snow"
+                        value={commValue}
+                        onChange={(content) => setCommValue(content)}
+                        // onBlur={handleCommentBlur}
+                      />
+                    </Box>
                     <Stack direction={"row"} gap={1.5}>
                       <IconButton
                         onClick={handleCommentBlur}

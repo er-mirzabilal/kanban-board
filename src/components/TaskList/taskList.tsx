@@ -14,33 +14,33 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { ListCard } from "../ListCard";
 import { FC, useState } from "react";
-
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState, useAppSelecter } from "@/redux/store";
+import { AppDispatch, RootState } from "@/redux/store";
 import { addCard, addListTitle } from "@/redux/features/task-list-slice";
+import { Draggable, Droppable } from "@hello-pangea/dnd";
 
 interface TaskListProps {
   listId: string;
   title: string;
+  index: number; // Index prop for draggable lists
 }
 
-const TaskList: FC<TaskListProps> = ({ listId, title }) => {
+const TaskList: FC<TaskListProps> = ({ listId, title, index }) => {
+  const dispatch = useDispatch<AppDispatch>();
+
   const listTitle = useSelector((state: RootState) => {
     const list = state.rootReducer.tasklist.value.find(
       (list) => list.listId === listId
     );
-    if (list) {
-      return list ? list.listTitle : null;
-    }
-    return null;
+    return list ? list.listTitle : "";
   });
-  const dispatch = useDispatch<AppDispatch>();
-  // Getting the list of cards from the Redux store for this specific listId
+
   const cards = useSelector(
     (state: RootState) =>
       state.rootReducer.tasklist.value.find((list) => list.listId === listId)
         ?.cards || []
   );
+
   const [isAddCard, setIsAddCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [titalValue, setTitalValue] = useState(title);
@@ -51,28 +51,30 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
 
   const handleAddCardClick = (listId: string) => {
     if (newCardTitle.trim() !== "") {
-      dispatch(addCard({ listId, cardTitle: newCardTitle })); // Dispatch the action with listId and cardTitle
+      dispatch(addCard({ listId, cardTitle: newCardTitle }));
       setNewCardTitle("");
       setIsAddCard(false);
     }
   };
 
   const handleTitleBlur = () => {
-    // Title blur
-    if (titalValue.trim() != "") {
+    if (titalValue.trim() !== "") {
       const payload = {
         listId: listId,
         listTitle: titalValue,
       };
       dispatch(addListTitle(payload));
     } else {
-      setTitalValue(listTitle || "");
+      setTitalValue(listTitle);
     }
   };
 
   return (
+    // <Draggable draggableId={listId} index={index}>
+    //   {(provided) => (
     <Box
-      //   maxHeight="sm"
+      // ref={provided.innerRef}
+      // {...provided.draggableProps}
       sx={{
         flex: "1 1 auto",
         width: "272px",
@@ -110,46 +112,69 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
             width: "224px",
             border: "none",
             "& .MuiInputBase-input": {
-              fontSize: "14px", // Change the font size
+              fontSize: "14px",
               fontWeight: 600,
-              color: "#172B4D", // Change the text color
+              color: "#172B4D",
             },
             "& .MuiOutlinedInput-root": {
               "& fieldset": {
-                border: "none", // Removes the border
+                border: "none",
               },
               "&.Mui-focused fieldset": {
-                border: "2px solid #0c66e4", // Change the border color when focused
+                border: "2px solid #0c66e4",
               },
             },
           }}
         />
-        <IconButton size="small">
+        <IconButton
+          size="small"
+          // {...provided.dragHandleProps}
+        >
           <MoreHorizOutlinedIcon sx={{ color: "#44546F" }} />
         </IconButton>
       </Stack>
 
       {/* Cards section */}
-      <Box
-        sx={{
-          overflowY: "auto",
-          flex: 1,
-          width: "100%",
-          px: "2px",
-          pb: "3px",
-          backgroundColor: palette.color.listColors.bg,
-        }}
-      >
-        {cards.map((card) => (
-          <ListCard
-            key={card.cardId}
-            cardId={card.cardId}
-            listId={listId}
-            title={card.title}
-            listTitle={title}
-          />
-        ))}
-      </Box>
+      <Droppable key={listId} droppableId={`${listId}`} type="CARD">
+        {(provided) => (
+          <Box
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            sx={{
+              overflowY: "auto",
+              flex: 1,
+              width: "100%",
+              px: "2px",
+              pb: "3px",
+              backgroundColor: palette.color.listColors.bg,
+            }}
+          >
+            {cards.map((card, index) => (
+              <Draggable
+                key={card.cardId}
+                draggableId={card.cardId}
+                index={index}
+              >
+                {(provided) => (
+                  <div
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    ref={provided.innerRef}
+                  >
+                    <ListCard
+                      cardId={card.cardId}
+                      listId={listId}
+                      title={card.title}
+                      listTitle={title}
+                    />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </Box>
+        )}
+      </Droppable>
 
       {/* Add new cards section */}
       {!isAddCard ? (
@@ -178,6 +203,7 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
       ) : (
         <Stack direction={"column"} gap={1} sx={{ mt: "10px" }}>
           <TextField
+            autoFocus
             onChange={(e) => setNewCardTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -187,7 +213,7 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
             placeholder={"Enter a name for this card..."}
             value={newCardTitle}
             sx={{ width: "100%" }}
-          ></TextField>
+          />
           <Stack direction={"row"} gap={1}>
             <Button
               variant="contained"
@@ -208,6 +234,8 @@ const TaskList: FC<TaskListProps> = ({ listId, title }) => {
         </Stack>
       )}
     </Box>
+    //   )}
+    // </Draggable>
   );
 };
 

@@ -1,6 +1,11 @@
 import { createSlice, PayloadAction, nanoid } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import { Dayjs } from "dayjs";
+import { DropResult } from "@hello-pangea/dnd";
+
+const uniqueId = (num: number) => {
+  return `${Date.now() + num}`;
+};
 
 export interface CommentDetail {
   id: number;
@@ -18,8 +23,8 @@ export interface CardDetail {
   cardId: string;
   title: string;
   desc: string;
-  startDate: string | null;
-  dueDate: string | null;
+  startDate: string | null | Dayjs;
+  dueDate: string | null | Dayjs;
   members: MemberDetail[];
   comments: CommentDetail[];
 }
@@ -49,6 +54,11 @@ interface UpdateCardDatesPayload {
   dueDate: Dayjs | null;
 }
 
+interface ReorderListsPayload {
+  sourceIndex: number;
+  destinationIndex: number;
+}
+
 type ListState = {
   listId: string;
   listTitle: string;
@@ -62,17 +72,17 @@ type InitialState = {
 const initialValue = {
   value: [
     {
-      listId: "1",
+      listId: uniqueId(1),
       listTitle: "To Do",
       cards: [],
     },
     {
-      listId: "2",
+      listId: uniqueId(2),
       listTitle: "In Progress",
       cards: [],
     },
     {
-      listId: "3",
+      listId: uniqueId(3),
       listTitle: "Done",
       cards: [],
     },
@@ -289,6 +299,61 @@ export const listSlice = createSlice({
         }
       }
     },
+
+    reorderCards: (
+      state,
+      action: PayloadAction<{
+        source: DropResult["source"];
+        destination: DropResult["destination"];
+      }>
+    ) => {
+      const { source, destination } = action.payload;
+      // Check if destination is valid (not null or undefined)
+      if (!destination) return;
+
+      // Find the source and destination lists
+      const sourceList = state.value.find(
+        (list) => list.listId === source.droppableId
+      );
+      const destinationList = state.value.find(
+        (list) => list.listId === destination.droppableId
+      );
+      if (!sourceList) {
+        console.error(
+          `Source list not found for droppableId: ${source.droppableId}`
+        );
+        return;
+      }
+      if (!destinationList) {
+        console.error(
+          `Destination list not found for droppableId: ${destination.droppableId}`
+        );
+        return;
+      }
+      // Remove the card from the source list
+      const [movedCard] = sourceList.cards.splice(source.index, 1);
+
+      // Add the card to the destination list
+      destinationList.cards.splice(destination.index, 0, movedCard);
+    },
+
+    reorderLists: (state, action: PayloadAction<ReorderListsPayload>) => {
+      const { sourceIndex, destinationIndex } = action.payload;
+
+      // Ensure the source and destination indices are within bounds
+      if (
+        sourceIndex >= 0 &&
+        destinationIndex >= 0 &&
+        sourceIndex < state.value.length &&
+        destinationIndex < state.value.length
+      ) {
+        // Remove the list from the source index
+        const [movedList] = state.value.splice(sourceIndex, 1);
+
+        // Insert the list at the destination index
+        state.value.splice(destinationIndex, 0, movedList);
+      }
+    },
   },
 });
 
@@ -302,5 +367,7 @@ export const {
   addComment,
   editComment,
   deleteComment,
+  reorderCards,
+  reorderLists,
 } = listSlice.actions;
 export default listSlice.reducer;
