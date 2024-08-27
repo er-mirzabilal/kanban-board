@@ -56,8 +56,13 @@ const ListCard: FC<ListCard> = ({
   members,
 }) => {
   const [open, setOpen] = React.useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  const handleOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
+  const [isCardHovered, setIsCardHovered] = useState(false);
   console.log(open);
   const cardDescription = useSelector((state: RootState) => {
     const list = state.rootReducer.tasklist.value.find(
@@ -93,12 +98,14 @@ const ListCard: FC<ListCard> = ({
         borderRadius: "7px",
         p: "10px",
         mt: "7px",
+        border: `1px solid #00FFFFFF`,
         boxShadow: `rgba(9, 30, 66, 0.25) 0px 4px 8px -2px, rgba(9, 30, 66, 0.08) 0px 0px 0px 1px`,
-        cursor: "pointer",
         "&:hover": {
           border: `1px solid #388BFF`,
         },
       }}
+      onMouseEnter={() => setIsCardHovered(true)}
+      onMouseLeave={() => setIsCardHovered(false)}
       // onClick={handleOpen}
     >
       <Stack direction={"column"}>
@@ -108,24 +115,38 @@ const ListCard: FC<ListCard> = ({
           sx={{ display: "flex", alignItems: "center" }}
         >
           <Typography variant="text-sm-regular">{title}</Typography>
-          <CreateRoundedIcon
-            sx={{
-              width: "16px",
-              height: "16px",
-              color: palette.color.iconColors.cardModalIconColor,
-            }}
-          />
+          <Button
+            variant="contained"
+            sx={{ backgroundColor: "#aaa" }}
+            onClick={handleOpen}
+          >
+            Open
+          </Button>
+          {isCardHovered && (
+            <CreateRoundedIcon
+              sx={{
+                width: "16px",
+                height: "16px",
+                color: palette.color.iconColors.cardModalIconColor,
+              }}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent click from triggering Box's onClick
+                // Handle icon click event here
+              }}
+            />
+          )}
         </Stack>
         {/* card desc, comment icons */}
         <Stack
           direction={"row"}
           justifyContent={"space-between"}
-          sx={{ display: "flex", alignItems: "center", mt: "5px" }}
+          sx={{ display: "flex", alignItems: "center", mt: "0px" }}
         >
           <Stack direction={"row"} gap={1}>
             {cardDescription ? (
               <NotesIcon
                 sx={{
+                  mt: "5px",
                   width: "16px",
                   height: "16px",
                   color: palette.color.iconColors.cardModalIconColor,
@@ -138,6 +159,7 @@ const ListCard: FC<ListCard> = ({
             {comments.length != 0 ? (
               <ChatBubbleOutlineRoundedIcon
                 sx={{
+                  mt: "5px",
                   width: "16px",
                   height: "16px",
                   color: palette.color.iconColors.cardModalIconColor,
@@ -147,11 +169,20 @@ const ListCard: FC<ListCard> = ({
               <></>
             )}
           </Stack>
-          {/* <Avatar
-            sx={{ width: "24px", height: "24px", backgroundColor: "#DE5737" }}
-          >
-            <Typography variant="text-xxs-medium">AY</Typography>
-          </Avatar> */}
+          {comments.length != 0 ? (
+            <Avatar
+              sx={{
+                mt: "5px",
+                width: "24px",
+                height: "24px",
+                backgroundColor: "#DE5737",
+              }}
+            >
+              <Typography variant="text-xxs-medium">AY</Typography>
+            </Avatar>
+          ) : (
+            <></>
+          )}
         </Stack>
       </Stack>
       <CardModal
@@ -160,15 +191,15 @@ const ListCard: FC<ListCard> = ({
         title={title}
         listName={listTitle}
         openModal={open}
-        onCloseModal={handleClose}
+        onCloseModal={() => setOpen(false)}
       />
-      <Button
+      {/* <Button
         variant="contained"
         sx={{ width: "100%", mt: "5px", backgroundColor: "#aaa" }}
         onClick={handleOpen}
       >
         Open
-      </Button>
+      </Button> */}
       {/* <Button onClick={handleOpen}>Open modal</Button>
       <Modal
         open={open}
